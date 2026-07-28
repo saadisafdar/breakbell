@@ -15,9 +15,9 @@ from . import audio
 from . import tray
 from .config import DEFAULT_CONFIG
 
-NAVY = "#103046"
-NAVY_DARK = "#0a2233"
-NAVY_TRACK = "#2c5170"
+TEAL = "#1F9FBC"
+TEAL_DARK = "#0c2b33"
+TEAL_TRACK = "#164956"
 WHITE = "#ffffff"
 
 
@@ -134,40 +134,40 @@ class BreakTimerApp:
         popup.title("BreakBell")
         popup.attributes("-topmost", True)
         popup.overrideredirect(True)
-        popup.configure(bg=NAVY)
+        popup.configure(bg=TEAL)
 
         width = 440
-        card = tk.Frame(popup, bg=NAVY, padx=26, pady=22)
+        card = tk.Frame(popup, bg=TEAL, padx=26, pady=22)
         card.pack(fill="both", expand=True)
 
-        content_row = tk.Frame(card, bg=NAVY)
+        content_row = tk.Frame(card, bg=TEAL)
         content_row.pack(fill="both", expand=True)
 
-        left_col = tk.Frame(content_row, bg=NAVY)
+        left_col = tk.Frame(content_row, bg=TEAL)
         left_col.pack(side="left", fill="both", expand=True)
 
-        right_col = tk.Frame(content_row, bg=NAVY)
+        right_col = tk.Frame(content_row, bg=TEAL)
         right_col.pack(side="right", padx=(24, 0))
 
         title = tk.Label(
             left_col, text=self.config.get("title", "Take a break"),
             font=("Segoe UI", 20, "bold"),
-            bg=NAVY, fg=WHITE, anchor="w"
+            bg=TEAL, fg=WHITE, anchor="w"
         )
         title.pack(anchor="w")
 
-        body = tk.Frame(left_col, bg=NAVY)
+        body = tk.Frame(left_col, bg=TEAL)
         body.pack(anchor="w", pady=(18, 20), fill="x")
         for line in self.lines:
             tk.Label(
-                body, text=line, font=("Segoe UI", 12), bg=NAVY, fg=WHITE, anchor="w"
+                body, text=line, font=("Segoe UI", 12), bg=TEAL, fg=WHITE, anchor="w"
             ).pack(anchor="w", pady=1)
 
         cancel_btn = tk.Button(
             left_col, text="Cancel Break", command=self.cancel_break,
-            bg=WHITE, fg=NAVY_DARK, relief="flat", padx=12, pady=6,
-            font=("Segoe UI", 9, "bold"), activebackground="#eafaf7",
-            activeforeground=NAVY_DARK, cursor="hand2", bd=0
+            bg=WHITE, fg=TEAL_DARK, relief="flat", padx=14, pady=7,
+            font=("Segoe UI", 9, "bold"), activebackground="#e6f7fa",
+            activeforeground=TEAL_DARK, cursor="hand2", bd=0
         )
         cancel_btn.pack(anchor="w")
 
@@ -175,12 +175,12 @@ class BreakTimerApp:
         # drains (shrinks from the top, anchored at the bottom) as time passes
         vbar_width = 44
         vbar_height = 180
-        bar_wrap = tk.Frame(right_col, bg=NAVY_TRACK, width=vbar_width, height=vbar_height)
+        bar_wrap = tk.Frame(right_col, bg=TEAL_TRACK, width=vbar_width, height=vbar_height)
         bar_wrap.pack()
         bar_wrap.pack_propagate(False)
 
         self.progress_canvas = tk.Canvas(
-            bar_wrap, bg=NAVY_TRACK, width=vbar_width, height=vbar_height, highlightthickness=0
+            bar_wrap, bg=TEAL_TRACK, width=vbar_width, height=vbar_height, highlightthickness=0
         )
         self.progress_canvas.pack(fill="both", expand=True)
         self.progress_bar_id = self.progress_canvas.create_rectangle(
@@ -192,7 +192,7 @@ class BreakTimerApp:
         break_seconds = self.config["break_seconds"]
         self.time_label = tk.Label(
             right_col, text=self._format_time(break_seconds),
-            font=("Segoe UI", 11), bg=NAVY, fg=WHITE
+            font=("Segoe UI", 11, "bold"), bg=TEAL, fg=WHITE
         )
         self.time_label.pack(pady=(10, 0))
 

@@ -12,6 +12,7 @@
 AppId={{4F1B6C2A-8E3D-4A6B-9C7F-BREAKBELLAPP1}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+UninstallDisplayName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}

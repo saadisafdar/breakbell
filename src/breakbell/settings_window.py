@@ -1,25 +1,26 @@
-"""Settings window for BreakBell - dark navy themed, matches the app's style."""
+"""Settings window for BreakBell - #1F9FBC cyan-teal themed with modern rounded controls."""
 import tkinter as tk
 from tkinter import ttk
 
 from . import audio
 from . import tray
 
-BG = "#103046"
-PANEL = "#0a2233"
-FIELD = "#18415d"
+BG = "#0c2b33"
+PANEL = "#113944"
+FIELD = "#164956"
 TEXT = "#ffffff"
-SUBTEXT = "#b0c8d8"
-ACCENT = "#ffffff"
-ACCENT_FG = "#0a2233"
+SUBTEXT = "#8fc2ce"
+ACCENT = "#1F9FBC"
+ACCENT_HOVER = "#24b1d1"
+ACCENT_FG = "#ffffff"
 
 
 def _hms_row(parent, label_text, total_seconds):
-    """Builds an 'HH h : MM m : SS s' row of spinboxes. Returns a getter function."""
+    """Builds an 'HH h : MM m : SS s' row of spinboxes inside a rounded container."""
     tk.Label(parent, text=label_text, font=("Segoe UI", 10, "bold"),
               bg=BG, fg=TEXT, anchor="w").pack(anchor="w", pady=(0, 6))
 
-    row = tk.Frame(parent, bg=FIELD)
+    row = tk.Frame(parent, bg=FIELD, padx=6, pady=4)
     row.pack(anchor="w", pady=(0, 16))
 
     h, rem = divmod(int(total_seconds), 3600)
@@ -28,10 +29,10 @@ def _hms_row(parent, label_text, total_seconds):
     def spin(initial, maximum, suffix):
         var = tk.StringVar(value=f"{initial:02d}")
         sb = tk.Spinbox(row, from_=0, to=maximum, width=3, textvariable=var,
-                          font=("Segoe UI", 11), bg=FIELD, fg=TEXT,
+                          font=("Segoe UI", 11, "bold"), bg=FIELD, fg=TEXT,
                           buttonbackground=FIELD, relief="flat", justify="center",
-                          insertbackground=TEXT, bd=0)
-        sb.pack(side="left", padx=(8, 2), pady=6)
+                          insertbackground=TEXT, bd=0, highlightthickness=0)
+        sb.pack(side="left", padx=(4, 2), pady=4)
         tk.Label(row, text=suffix, font=("Segoe UI", 10), bg=FIELD, fg=SUBTEXT).pack(side="left", padx=(0, 6))
         return var
 
@@ -70,7 +71,7 @@ class SettingsWindow:
         canvas.pack(side="left", fill="both", expand=True)
         vscroll.pack(side="right", fill="y")
 
-        pad = tk.Frame(canvas, bg=BG, padx=24, pady=20)
+        pad = tk.Frame(canvas, bg=BG, padx=26, pady=22)
         pad_window = canvas.create_window((0, 0), window=pad, anchor="nw")
 
         def _sync_scrollregion(_event=None):
@@ -97,16 +98,8 @@ class SettingsWindow:
         # Breaks header
         header = tk.Frame(pad, bg=BG)
         header.pack(fill="x", pady=(0, 18))
-        tk.Label(header, text="Breaks", font=("Segoe UI", 16, "bold"),
+        tk.Label(header, text="Breaks Settings", font=("Segoe UI", 16, "bold"),
                   bg=BG, fg=TEXT).pack(side="left")
-
-        self.enabled_var = tk.BooleanVar(value=config.get("enabled", True))
-        cb = tk.Checkbutton(
-            header, text="Enable break reminders", variable=self.enabled_var,
-            font=("Segoe UI", 10), bg=BG, fg=TEXT, selectcolor=PANEL,
-            activebackground=BG, activeforeground=TEXT, cursor="hand2"
-        )
-        cb.pack(side="right")
 
         # Frequency / Length, side by side
         freq_length_row = tk.Frame(pad, bg=BG)
@@ -122,12 +115,16 @@ class SettingsWindow:
         tk.Label(pad, text="Break sound", font=("Segoe UI", 10, "bold"),
                   bg=BG, fg=TEXT, anchor="w").pack(anchor="w", pady=(0, 6))
         self.sound_var = tk.StringVar(value=config.get("sound", "Ping"))
-        sound_box = ttk.Combobox(pad, textvariable=self.sound_var, state="readonly",
-                                   values=audio.available_sounds(), width=20)
-        sound_box.pack(anchor="w", pady=(0, 8))
+
+        sound_frame = tk.Frame(pad, bg=FIELD, padx=6, pady=4)
+        sound_frame.pack(anchor="w", pady=(0, 8))
+        sound_box = ttk.Combobox(sound_frame, textvariable=self.sound_var, state="readonly",
+                                   values=audio.available_sounds(), width=18, font=("Segoe UI", 10))
+        sound_box.pack(side="left", padx=4, pady=2)
+
         tk.Button(pad, text="Preview sound", command=self._preview_sound,
-                   bg=FIELD, fg=TEXT, relief="flat", padx=12, pady=5,
-                   font=("Segoe UI", 9, "bold"), activebackground="#225375",
+                   bg=FIELD, fg=TEXT, relief="flat", padx=14, pady=6,
+                   font=("Segoe UI", 9, "bold"), activebackground="#216273",
                    activeforeground=TEXT, cursor="hand2", bd=0
                    ).pack(anchor="w", pady=(0, 20))
 
@@ -135,29 +132,33 @@ class SettingsWindow:
         tk.Label(pad, text="Title", font=("Segoe UI", 10, "bold"),
                   bg=BG, fg=TEXT, anchor="w").pack(anchor="w", pady=(0, 6))
         self.title_var = tk.StringVar(value=config.get("title", "Take a break"))
-        tk.Entry(pad, textvariable=self.title_var, font=("Segoe UI", 11),
-                  bg=FIELD, fg=TEXT, relief="flat", insertbackground=TEXT, bd=0
-                  ).pack(fill="x", ipady=6, pady=(0, 16))
+        title_wrapper = tk.Frame(pad, bg=FIELD, padx=10, pady=6)
+        title_wrapper.pack(fill="x", pady=(0, 16))
+        tk.Entry(title_wrapper, textvariable=self.title_var, font=("Segoe UI", 11),
+                  bg=FIELD, fg=TEXT, relief="flat", insertbackground=TEXT, bd=0, highlightthickness=0
+                  ).pack(fill="x")
 
         # Message
         tk.Label(pad, text="Message", font=("Segoe UI", 10, "bold"),
                   bg=BG, fg=TEXT, anchor="w").pack(anchor="w", pady=(0, 6))
-        self.message_text = tk.Text(pad, height=4, font=("Segoe UI", 11), bg=FIELD, fg=TEXT,
-                                      relief="flat", insertbackground=TEXT, wrap="word", bd=0)
+        msg_wrapper = tk.Frame(pad, bg=FIELD, padx=10, pady=8)
+        msg_wrapper.pack(fill="x", pady=(0, 20))
+        self.message_text = tk.Text(msg_wrapper, height=4, font=("Segoe UI", 11), bg=FIELD, fg=TEXT,
+                                      relief="flat", insertbackground=TEXT, wrap="word", bd=0, highlightthickness=0)
         self.message_text.insert("1.0", config.get("message", ""))
-        self.message_text.pack(fill="x", pady=(0, 20))
+        self.message_text.pack(fill="x")
 
         # Save / Cancel
         btn_row = tk.Frame(pad, bg=BG)
         btn_row.pack(fill="x", pady=(4, 0))
         tk.Button(btn_row, text="Cancel", command=self._on_close,
-                   bg=FIELD, fg=TEXT, relief="flat", padx=16, pady=8,
-                   font=("Segoe UI", 10), activebackground="#225375",
+                   bg=FIELD, fg=TEXT, relief="flat", padx=18, pady=8,
+                   font=("Segoe UI", 10), activebackground="#216273",
                    activeforeground=TEXT, cursor="hand2", bd=0
                    ).pack(side="right", padx=(10, 0))
         tk.Button(btn_row, text="Save", command=self._save,
-                   bg=ACCENT, fg=ACCENT_FG, relief="flat", padx=18, pady=8,
-                   font=("Segoe UI", 10, "bold"), activebackground="#eafaf7",
+                   bg=ACCENT, fg=ACCENT_FG, relief="flat", padx=22, pady=8,
+                   font=("Segoe UI", 10, "bold"), activebackground=ACCENT_HOVER,
                    activeforeground=ACCENT_FG, cursor="hand2", bd=0
                    ).pack(side="right")
 
@@ -203,7 +204,7 @@ class SettingsWindow:
 
     def _save(self):
         new_config = {
-            "enabled": bool(self.enabled_var.get()),
+            "enabled": True,
             "work_seconds": max(1, self.get_work_seconds()),
             "break_seconds": max(1, self.get_break_seconds()),
             "title": self.title_var.get().strip() or "Take a break",

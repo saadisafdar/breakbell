@@ -43,22 +43,11 @@ def main():
         app.root.after(0, app.root.destroy)
 
     if TRAY_AVAILABLE and not args.no_tray:
-        def toggle_pause():
-            new_enabled = not app.config.get("enabled", True)
-            new_config = dict(app.config)
-            new_config["enabled"] = new_enabled
-            save_config(new_config)
-            app.root.after(0, lambda: app.apply_config(new_config))
-
         def start_tray():
             try:
                 import pystray  # type: ignore
                 menu = pystray.Menu(
                     pystray.MenuItem("Settings", lambda: app.root.after(0, open_settings), default=True),
-                    pystray.MenuItem(
-                        lambda item: "Pause breaks" if app.config.get("enabled", True) else "Resume breaks",
-                        lambda: toggle_pause()
-                    ),
                     pystray.MenuItem("Take a break now", lambda: app.root.after(0, app.trigger_break_now)),
                     pystray.MenuItem("Quit", lambda: quit_app()),
                 )
