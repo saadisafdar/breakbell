@@ -18,7 +18,7 @@ def _config_dir():
         base = os.environ.get("APPDATA") or os.path.expanduser("~")
         return os.path.join(base, "BreakBell")
     elif sys.platform == "darwin":
-        return os.path.expanduser("~/Library/Application Support/BreakTimer")
+        return os.path.expanduser("~/Library/Application Support/BreakBell")
     else:
         base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
         return os.path.join(base, "breakbell")

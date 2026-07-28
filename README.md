@@ -98,7 +98,7 @@ installers; on Linux, `sudo apt install python3-tk` if it's missing).
 
 Building the Windows installer locally requires [Inno Setup](https://jrsoftware.org/isinfo.php):
 ```
-pyinstaller --onedir --windowed --noupx --name breakbell --hidden-import=PIL._tkinter_finder --add-data "src/breakbell/assets/sounds;breakbell/assets/sounds" run_breakbell.py
+pyinstaller --onedir --windowed --noupx --name breakbell --hidden-import=PIL._tkinter_finder --add-data "src/breakbell/assets/sounds;breakbell/assets/sounds" --add-data "src/breakbell/assets/icon.png;breakbell/assets" run_breakbell.py
 iscc installer.iss
 ```
 

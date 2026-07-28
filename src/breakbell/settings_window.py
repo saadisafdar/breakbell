@@ -82,15 +82,30 @@ class SettingsWindow:
         canvas.bind("<Configure>", _sync_width)
 
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            if hasattr(event, "num") and event.num == 4:
+                canvas.yview_scroll(-1, "units")
+            elif hasattr(event, "num") and event.num == 5:
+                canvas.yview_scroll(1, "units")
+            else:
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        canvas.bind_all("<Button-4>", _on_mousewheel)
+        canvas.bind_all("<Button-5>", _on_mousewheel)
 
         # Breaks header
         header = tk.Frame(pad, bg=BG)
         header.pack(fill="x", pady=(0, 18))
         tk.Label(header, text="Breaks", font=("Segoe UI", 15, "bold"),
                   bg=BG, fg=TEXT).pack(side="left")
+
+        self.enabled_var = tk.BooleanVar(value=config.get("enabled", True))
+        cb = tk.Checkbutton(
+            header, text="Enable break reminders", variable=self.enabled_var,
+            font=("Segoe UI", 10), bg=BG, fg=TEXT, selectcolor=FIELD,
+            activebackground=BG, activeforeground=TEXT, cursor="hand2"
+        )
+        cb.pack(side="right")
 
         # Frequency / Length, side by side
         freq_length_row = tk.Frame(pad, bg=BG)
@@ -164,6 +179,8 @@ class SettingsWindow:
     def _on_close(self):
         try:
             self.win.unbind_all("<MouseWheel>")
+            self.win.unbind_all("<Button-4>")
+            self.win.unbind_all("<Button-5>")
         except tk.TclError:
             pass
         self.win.destroy()
@@ -182,7 +199,7 @@ class SettingsWindow:
 
     def _save(self):
         new_config = {
-            "enabled": True,
+            "enabled": bool(self.enabled_var.get()),
             "work_seconds": max(1, self.get_work_seconds()),
             "break_seconds": max(1, self.get_break_seconds()),
             "title": self.title_var.get().strip() or "Take a break",
