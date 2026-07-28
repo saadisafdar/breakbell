@@ -76,7 +76,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          python -m nuitka --standalone --lto=no --enable-plugin=tk-inter --windows-icon-from-ico=icon.ico --company-name="Saadi Safdar" --product-name="BreakBell" --file-version="$env:FILE_VERSION" --product-version="$env:APP_VERSION" --output-filename=breakbell.exe --output-dir=dist_nuitka --include-data-dir=src/breakbell/assets=breakbell/assets --assume-yes-for-downloads run_breakbell.py
+          python -m nuitka --standalone --lto=no --enable-plugin=tk-inter --windows-disable-console --windows-icon-from-ico=icon.ico --company-name="Saadi Safdar" --product-name="BreakBell" --file-version="$env:FILE_VERSION" --product-version="$env:APP_VERSION" --output-filename=breakbell.exe --output-dir=dist_nuitka --include-data-dir=src/breakbell/assets=breakbell/assets --assume-yes-for-downloads run_breakbell.py
           New-Item -ItemType Directory -Force -Path dist/breakbell
           Copy-Item -Path dist_nuitka/run_breakbell.dist/* -Destination dist/breakbell -Recurse -Force
 

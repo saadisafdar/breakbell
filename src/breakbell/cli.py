@@ -8,6 +8,15 @@ from .tray import TRAY_AVAILABLE, make_icon_image
 
 
 def main():
+    if sys.platform.startswith("win"):
+        import ctypes
+        try:
+            console_hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+            if console_hwnd:
+                ctypes.windll.user32.ShowWindow(console_hwnd, 0)
+        except Exception:
+            pass
+
     parser = argparse.ArgumentParser(description="Lightweight desktop break reminder timer")
     parser.add_argument("--no-tray", action="store_true",
                          help="Disable the system tray icon")

@@ -136,8 +136,8 @@ class BreakTimerApp:
         popup.overrideredirect(True)
         popup.configure(bg=NAVY)
 
-        width = 560
-        card = tk.Frame(popup, bg=NAVY, padx=28, pady=22)
+        width = 440
+        card = tk.Frame(popup, bg=NAVY, padx=26, pady=22)
         card.pack(fill="both", expand=True)
 
         content_row = tk.Frame(card, bg=NAVY)
@@ -147,7 +147,7 @@ class BreakTimerApp:
         left_col.pack(side="left", fill="both", expand=True)
 
         right_col = tk.Frame(content_row, bg=NAVY)
-        right_col.pack(side="right", padx=(28, 0))
+        right_col.pack(side="right", padx=(24, 0))
 
         title = tk.Label(
             left_col, text=self.config.get("title", "Take a break"),
