@@ -5,6 +5,7 @@ import threading
 from .app import BreakTimerApp
 from .config import load_config, save_config
 from .tray import TRAY_AVAILABLE, make_icon_image
+from . import updater
 
 
 def main():
@@ -30,6 +31,9 @@ def main():
     config = load_config()
     app = BreakTimerApp(config=config)
 
+    # Check for updates asynchronously at launch
+    updater.check_for_updates_async()
+
     tray_icon_holder = {}
 
     def open_settings():
@@ -51,11 +55,19 @@ def main():
         def start_tray():
             try:
                 import pystray  # type: ignore
-                menu = pystray.Menu(
+                items = [
                     pystray.MenuItem("Settings", lambda: app.root.after(0, open_settings), default=True),
+                ]
+                up_info = updater.get_update_info()
+                if up_info:
+                    items.append(
+                        pystray.MenuItem(f"🎉 Update available (v{up_info['version']})", lambda: updater.open_release_page())
+                    )
+                items.extend([
                     pystray.MenuItem("Take a break now", lambda: app.root.after(0, app.trigger_break_now)),
                     pystray.MenuItem("Quit", lambda: quit_app()),
-                )
+                ])
+                menu = pystray.Menu(*items)
                 icon = pystray.Icon("breakbell", make_icon_image(), "BreakBell", menu)
                 tray_icon_holder["icon"] = icon
                 icon.run()

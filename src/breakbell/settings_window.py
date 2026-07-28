@@ -1,9 +1,11 @@
 """Settings window for BreakBell - #1F9FBC cyan-teal themed with modern rounded controls."""
+import sys
 import tkinter as tk
 from tkinter import ttk
 
 from . import audio
 from . import tray
+from . import updater
 
 BG = "#0c2b33"
 PANEL = "#113944"
@@ -101,6 +103,21 @@ class SettingsWindow:
         tk.Label(header, text="Breaks Settings", font=("Segoe UI", 16, "bold"),
                   bg=BG, fg=TEXT).pack(side="left")
 
+        up_info = updater.get_update_info()
+        if up_info:
+            banner = tk.Frame(pad, bg=FIELD, padx=12, pady=8)
+            banner.pack(fill="x", pady=(0, 16))
+            tk.Label(
+                banner, text=f"🎉 Update available: v{up_info['version']}",
+                font=("Segoe UI", 10, "bold"), bg=FIELD, fg=TEXT
+            ).pack(side="left")
+            tk.Button(
+                banner, text="Download Update", command=updater.open_release_page,
+                bg=ACCENT, fg=ACCENT_FG, relief="flat", padx=12, pady=4,
+                font=("Segoe UI", 9, "bold"), activebackground=ACCENT_HOVER,
+                activeforeground=ACCENT_FG, cursor="hand2", bd=0
+            ).pack(side="right")
+
         # Frequency / Length, side by side
         freq_length_row = tk.Frame(pad, bg=BG)
         freq_length_row.pack(fill="x")
@@ -177,6 +194,17 @@ class SettingsWindow:
         self.win.geometry(f"{width}x{height}+{x}+{y}")
         self.win.update_idletasks()
         self.win.minsize(min(width, 380), 300)
+
+        if sys.platform.startswith("win"):
+            try:
+                import ctypes
+                hwnd = ctypes.windll.user32.GetParent(self.win.winfo_id())
+                w = self.win.winfo_width()
+                h = self.win.winfo_height()
+                rgn = ctypes.windll.gdi32.CreateRoundRectRgn(0, 0, w + 1, h + 1, 20, 20)
+                ctypes.windll.user32.SetWindowRgn(hwnd, rgn, True)
+            except Exception:
+                pass
 
         self.win.protocol("WM_DELETE_WINDOW", self._on_close)
 
