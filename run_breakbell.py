@@ -11,6 +11,11 @@ import sys
 if sys.platform.startswith("win"):
     import ctypes
     try:
+        myappid = "saadisafdar.breakbell.app.1"
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except Exception:
+        pass
+    try:
         console_hwnd = ctypes.windll.kernel32.GetConsoleWindow()
         if console_hwnd:
             ctypes.windll.user32.ShowWindow(console_hwnd, 0)

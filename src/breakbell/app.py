@@ -136,65 +136,56 @@ class BreakTimerApp:
         popup.overrideredirect(True)
         popup.configure(bg=TEAL)
 
-        width = 440
+        width = 460
         card = tk.Frame(popup, bg=TEAL, padx=26, pady=22)
         card.pack(fill="both", expand=True)
 
-        content_row = tk.Frame(card, bg=TEAL)
-        content_row.pack(fill="both", expand=True)
-
-        left_col = tk.Frame(content_row, bg=TEAL)
-        left_col.pack(side="left", fill="both", expand=True)
-
-        right_col = tk.Frame(content_row, bg=TEAL)
-        right_col.pack(side="right", padx=(24, 0))
+        # Top row: Title on left, rounded pill Cancel Break button on top right
+        top_row = tk.Frame(card, bg=TEAL)
+        top_row.pack(fill="x", pady=(0, 14))
 
         title = tk.Label(
-            left_col, text=self.config.get("title", "Take a break"),
-            font=("Segoe UI", 20, "bold"),
+            top_row, text=self.config.get("title", "Take a break"),
+            font=("Segoe UI", 18, "bold"),
             bg=TEAL, fg=WHITE, anchor="w"
         )
-        title.pack(anchor="w")
-
-        body = tk.Frame(left_col, bg=TEAL)
-        body.pack(anchor="w", pady=(18, 20), fill="x")
-        for line in self.lines:
-            tk.Label(
-                body, text=line, font=("Segoe UI", 12), bg=TEAL, fg=WHITE, anchor="w"
-            ).pack(anchor="w", pady=1)
+        title.pack(side="left")
 
         cancel_btn = tk.Button(
-            left_col, text="Cancel Break", command=self.cancel_break,
-            bg=WHITE, fg=TEAL_DARK, relief="flat", padx=14, pady=7,
-            font=("Segoe UI", 9, "bold"), activebackground="#e6f7fa",
-            activeforeground=TEAL_DARK, cursor="hand2", bd=0
+            top_row, text="Cancel Break", command=self.cancel_break,
+            bg=TEAL_TRACK, fg=WHITE, relief="flat", padx=14, pady=5,
+            font=("Segoe UI", 9, "bold"), activebackground="#1e7386",
+            activeforeground=WHITE, cursor="hand2", bd=0, highlightthickness=0
         )
-        cancel_btn.pack(anchor="w")
+        cancel_btn.pack(side="right")
 
-        # Vertical progress bar: thick, fixed height, fills top-to-bottom and
-        # drains (shrinks from the top, anchored at the bottom) as time passes
-        vbar_width = 44
-        vbar_height = 180
-        bar_wrap = tk.Frame(right_col, bg=TEAL_TRACK, width=vbar_width, height=vbar_height)
-        bar_wrap.pack()
-        bar_wrap.pack_propagate(False)
+        # Middle row: Message lines
+        body = tk.Frame(card, bg=TEAL)
+        body.pack(anchor="w", pady=(0, 16), fill="x")
+        for line in self.lines:
+            tk.Label(
+                body, text=line, font=("Segoe UI", 11), bg=TEAL, fg=WHITE, anchor="w"
+            ).pack(anchor="w", pady=1)
 
-        self.progress_canvas = tk.Canvas(
-            bar_wrap, bg=TEAL_TRACK, width=vbar_width, height=vbar_height, highlightthickness=0
-        )
-        self.progress_canvas.pack(fill="both", expand=True)
-        self.progress_bar_id = self.progress_canvas.create_rectangle(
-            0, 0, vbar_width, vbar_height, fill=WHITE, width=0
-        )
-        self._vbar_width = vbar_width
-        self._vbar_height = vbar_height
+        # Bottom row: Countdown timer right above horizontal progress bar
+        bottom_row = tk.Frame(card, bg=TEAL)
+        bottom_row.pack(fill="x", side="bottom")
 
         break_seconds = self.config["break_seconds"]
         self.time_label = tk.Label(
-            right_col, text=self._format_time(break_seconds),
-            font=("Segoe UI", 11, "bold"), bg=TEAL, fg=WHITE
+            bottom_row, text=self._format_time(break_seconds),
+            font=("Segoe UI", 10, "bold"), bg=TEAL, fg=WHITE, anchor="e"
         )
-        self.time_label.pack(pady=(10, 0))
+        self.time_label.pack(fill="x", pady=(0, 4))
+
+        bar_height = 8
+        self.progress_canvas = tk.Canvas(
+            bottom_row, bg=TEAL_TRACK, height=bar_height, highlightthickness=0, bd=0
+        )
+        self.progress_canvas.pack(fill="x")
+        self.progress_bar_id = self.progress_canvas.create_rectangle(
+            0, 0, 0, bar_height, fill=WHITE, width=0
+        )
 
         popup.update_idletasks()
         height = card.winfo_reqheight()
@@ -214,9 +205,6 @@ class BreakTimerApp:
             pass
         popup.bind("<FocusOut>", self._on_break_focus_out)
 
-        # Re-assert geometry: lift()/focus_force()/grab_set() can trigger Tk
-        # to reprocess pack's automatic geometry request, silently resetting
-        # position to (0,0) if we don't flush and reapply.
         popup.geometry(f"{width}x{height}+{x}+{y}")
         popup.update_idletasks()
 
@@ -237,7 +225,6 @@ class BreakTimerApp:
         overlay.geometry(
             f"{overlay.winfo_screenwidth()}x{overlay.winfo_screenheight()}+0+0"
         )
-        # Absorb clicks so they don't reach whatever window is underneath
         overlay.bind("<Button-1>", lambda e: "break")
 
     def _on_break_focus_out(self, _event=None):
@@ -269,11 +256,12 @@ class BreakTimerApp:
             return
 
         self.time_label.config(text=self._format_time(remaining))
-        frac = remaining / self._break_total
+        frac = max(0.0, min(1.0, remaining / self._break_total))
         try:
-            filled_top = self._vbar_height * (1 - frac)
+            total_w = self.progress_canvas.winfo_width()
+            filled_w = max(0, total_w * frac)
             self.progress_canvas.coords(
-                self.progress_bar_id, 0, filled_top, self._vbar_width, self._vbar_height
+                self.progress_bar_id, 0, 0, filled_w, 8
             )
         except tk.TclError:
             return
