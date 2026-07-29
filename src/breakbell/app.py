@@ -8,6 +8,7 @@ config dict (see config.py) so settings can be changed live from the
 Settings window without restarting the app.
 """
 
+import gc
 import sys
 import time
 import tkinter as tk
@@ -136,12 +137,23 @@ class BreakTimerApp:
         right_col = tk.Frame(content_row, bg=TEAL)
         right_col.pack(side="right", padx=(24, 0))
 
+        title_frame = tk.Frame(left_col, bg=TEAL)
+        title_frame.pack(anchor="w")
+
+        try:
+            self._card_logo_img = tk.PhotoImage(file=tray.icon_path())
+            if self._card_logo_img.width() > 48:
+                self._card_logo_img = self._card_logo_img.subsample(max(1, self._card_logo_img.width() // 36))
+            tk.Label(title_frame, image=self._card_logo_img, bg=TEAL).pack(side="left", padx=(0, 10))
+        except Exception:
+            pass
+
         title = tk.Label(
-            left_col, text=self.config.get("title", "Take a break"),
+            title_frame, text=self.config.get("title", "Take a break"),
             font=("Segoe UI", 20, "bold"),
             bg=TEAL, fg=WHITE, anchor="w"
         )
-        title.pack(anchor="w")
+        title.pack(side="left")
 
         body = tk.Frame(left_col, bg=TEAL)
         body.pack(anchor="w", pady=(18, 20), fill="x")
@@ -303,6 +315,7 @@ class BreakTimerApp:
             except tk.TclError:
                 pass
             self.overlay = None
+        gc.collect()
 
     def run(self):
         self.root.mainloop()

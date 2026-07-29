@@ -21,39 +21,7 @@ TOGGLE_OFF  = "#bdbdbd"
 FONT        = "Segoe UI"
 
 
-# ── Toggle switch widget ─────────────────────────────────────────────────────
-class ToggleSwitch(tk.Canvas):
-    """A pill-shaped on/off toggle rendered on a Canvas."""
-
-    W, H, R = 46, 26, 13   # width, height, corner radius
-
-    def __init__(self, parent, variable: tk.BooleanVar, **kw):
-        kw.setdefault("bg", CARD_BG)
-        kw.setdefault("highlightthickness", 0)
-        super().__init__(parent, width=self.W, height=self.H, **kw)
-        self._var = variable
-        self._draw()
-        self.bind("<Button-1>", self._toggle)
-        variable.trace_add("write", lambda *_: self._draw())
-
-    def _draw(self):
-        self.delete("all")
-        on = self._var.get()
-        track = TOGGLE_ON if on else TOGGLE_OFF
-        r = self.R
-
-        # Pill track
-        self.create_arc(0, 0, r*2, self.H, start=90, extent=180, fill=track, outline=track)
-        self.create_arc(self.W - r*2, 0, self.W, self.H, start=270, extent=180, fill=track, outline=track)
-        self.create_rectangle(r, 0, self.W - r, self.H, fill=track, outline=track)
-
-        # Thumb
-        pad = 3
-        cx = self.W - r - pad if on else r + pad
-        self.create_oval(cx - r + pad, pad, cx + r - pad, self.H - pad, fill="white", outline="white")
-
-    def _toggle(self, _event=None):
-        self._var.set(not self._var.get())
+import gc
 
 
 # ── HMS spinbox row ──────────────────────────────────────────────────────────
@@ -199,11 +167,19 @@ class SettingsWindow:
         inner = tk.Frame(card, bg=CARD_BG, padx=18, pady=14)
         inner.pack(fill="x")
 
-        # ── Breaks header row (title + Save/Cancel buttons) ──
+        # ── Breaks header row (logo + title + Save/Cancel buttons) ──
         hdr = tk.Frame(inner, bg=CARD_BG)
         hdr.pack(fill="x", pady=(0, 14))
 
-        tk.Label(hdr, text="Breaks", font=(FONT, 13, "bold"),
+        try:
+            self._logo_img = tk.PhotoImage(file=tray.icon_path())
+            if self._logo_img.width() > 48:
+                self._logo_img = self._logo_img.subsample(max(1, self._logo_img.width() // 36))
+            tk.Label(hdr, image=self._logo_img, bg=CARD_BG).pack(side="left", padx=(0, 8))
+        except Exception:
+            pass
+
+        tk.Label(hdr, text="Breaks", font=(FONT, 14, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(side="left")
 
         tk.Button(hdr, text="Cancel", command=self._on_close,
@@ -329,6 +305,7 @@ class SettingsWindow:
         except tk.TclError:
             pass
         self.win.destroy()
+        gc.collect()
 
     def _save(self):
         new_config = {

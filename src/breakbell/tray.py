@@ -21,17 +21,22 @@ except Exception:
     # raise on systems missing a tray backend (e.g. no GTK/AppIndicator).
     TRAY_AVAILABLE = False
 
-_ICON_PATH = os.path.join(os.path.dirname(__file__), "assets", "icon.png")
+_ASSET_DIR = os.path.join(os.path.dirname(__file__), "assets")
+_ICON_SM_PATH = os.path.join(_ASSET_DIR, "icon_sm.png")
+_ICON_PATH = _ICON_SM_PATH if os.path.exists(_ICON_SM_PATH) else os.path.join(_ASSET_DIR, "icon.png")
 _cached_icon = None
 
 
-def make_icon_image():
+def make_icon_image(size=(64, 64)):
     global _cached_icon
     if _cached_icon is None:
-        _cached_icon = Image.open(_ICON_PATH).convert("RGBA")
+        if PIL_AVAILABLE:
+            im = Image.open(_ICON_PATH).convert("RGBA")
+            im.thumbnail(size, Image.Resampling.LANCZOS)
+            _cached_icon = im
     return _cached_icon
 
 
 def icon_path():
-    """Path to the bundled icon PNG, for use as a Tk window icon."""
+    """Path to the lightweight bundled icon PNG, for use as a Tk window icon."""
     return _ICON_PATH
