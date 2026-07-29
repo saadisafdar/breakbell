@@ -22,20 +22,6 @@ TEAL_TRACK = "#164956"
 WHITE = "#ffffff"
 
 
-def apply_rounded_corners(window, radius=22):
-    if not sys.platform.startswith("win"):
-        return
-    window.update_idletasks()
-    try:
-        import ctypes
-        hwnd = ctypes.windll.user32.GetParent(window.winfo_id())
-        w = window.winfo_width()
-        h = window.winfo_height()
-        rgn = ctypes.windll.gdi32.CreateRoundRectRgn(0, 0, w + 1, h + 1, radius, radius)
-        ctypes.windll.user32.SetWindowRgn(hwnd, rgn, True)
-    except Exception:
-        pass
-
 
 class BreakTimerApp:
     def __init__(self, config=None):
@@ -214,10 +200,6 @@ class BreakTimerApp:
         except tk.TclError:
             pass
         popup.bind("<FocusOut>", self._on_break_focus_out)
-
-        popup.geometry(f"{width}x{height}+{x}+{y}")
-        popup.update_idletasks()
-        apply_rounded_corners(popup, 22)
 
         self._break_total = break_seconds
         self.break_end_time = time.monotonic() + break_seconds
