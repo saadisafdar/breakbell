@@ -35,4 +35,4 @@ breakbell = "breakbell.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-breakbell = ["assets/sounds/*.wav", "assets/icon.png"]
+breakbell = ["assets/sounds/*.wav", "assets/icon_sm.png", "assets/icon.png"]

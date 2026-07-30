@@ -7,4 +7,3 @@ dist/
 venv/
 *.spec
 .DS_Store
-BREAKBELL_HANDOFF.md

@@ -8,20 +8,18 @@ config dict (see config.py) so settings can be changed live from the
 Settings window without restarting the app.
 """
 
-import gc
-import sys
 import time
 import tkinter as tk
 
 from . import audio
 from . import tray
 from .config import DEFAULT_CONFIG
+from .utils import _draw_rounded_polygon
 
 TEAL = "#1F9FBC"
 TEAL_DARK = "#0c2b33"
 TEAL_TRACK = "#164956"
 WHITE = "#ffffff"
-
 
 
 class BreakTimerApp:
@@ -41,8 +39,7 @@ class BreakTimerApp:
         self.popup = None
         self.overlay = None
         self.progress_canvas = None
-        self.progress_bar_id = None
-        self.time_label = None
+        self.time_label_id = None
         self.break_end_time = None
         self.tick_job = None
         self.next_break_job = None
@@ -101,16 +98,11 @@ class BreakTimerApp:
     # ---------- break screen ----------
 
     def start_break(self):
-        if self.popup is not None:
-            try:
-                self.popup.destroy()
-            except tk.TclError:
-                pass
-        if self.overlay is not None:
-            try:
-                self.overlay.destroy()
-            except tk.TclError:
-                pass
+        # Use _close_popup() so _break_active is properly reset before we
+        # re-enter, preventing any desync if start_break() is called while
+        # a break is already in progress.
+        if self.popup is not None or self.overlay is not None:
+            self._close_popup()
 
         audio.play_sound(self.config.get("sound", "None"))
 
@@ -122,81 +114,63 @@ class BreakTimerApp:
         popup.title("BreakBell")
         popup.attributes("-topmost", True)
         popup.overrideredirect(True)
-        popup.configure(bg=TEAL)
 
-        width = 460
-        card = tk.Frame(popup, bg=TEAL, padx=26, pady=22)
-        card.pack(fill="both", expand=True)
-
-        content_row = tk.Frame(card, bg=TEAL)
-        content_row.pack(fill="both", expand=True)
-
-        left_col = tk.Frame(content_row, bg=TEAL)
-        left_col.pack(side="left", fill="both", expand=True)
-
-        right_col = tk.Frame(content_row, bg=TEAL)
-        right_col.pack(side="right", padx=(24, 0))
-
-        title_frame = tk.Frame(left_col, bg=TEAL)
-        title_frame.pack(anchor="w")
-
+        TRANS_KEY = "#000001"
         try:
-            self._card_logo_img = tk.PhotoImage(file=tray.icon_path())
-            if self._card_logo_img.width() > 48:
-                self._card_logo_img = self._card_logo_img.subsample(max(1, self._card_logo_img.width() // 36))
-            tk.Label(title_frame, image=self._card_logo_img, bg=TEAL).pack(side="left", padx=(0, 10))
+            popup.wm_attributes("-transparentcolor", TRANS_KEY)
+            popup.configure(bg=TRANS_KEY)
         except Exception:
-            pass
+            popup.configure(bg=TEAL)
 
-        title = tk.Label(
-            title_frame, text=self.config.get("title", "Take a break"),
-            font=("Segoe UI", 20, "bold"),
-            bg=TEAL, fg=WHITE, anchor="w"
-        )
-        title.pack(side="left")
+        width, height = 460, 220
+        canvas = tk.Canvas(popup, bg=TRANS_KEY, width=width, height=height, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
 
-        body = tk.Frame(left_col, bg=TEAL)
-        body.pack(anchor="w", pady=(18, 20), fill="x")
-        for line in self.lines:
-            tk.Label(
-                body, text=line, font=("Segoe UI", 12), bg=TEAL, fg=WHITE, anchor="w"
-            ).pack(anchor="w", pady=1)
+        # Smooth rounded teal card background
+        _draw_rounded_polygon(canvas, 4, 4, width - 4, height - 4, r=24, fill=TEAL, outline="")
 
-        cancel_btn = tk.Button(
-            left_col, text="Cancel Break", command=self.cancel_break,
-            bg=WHITE, fg=TEAL_DARK, relief="flat", padx=14, pady=7,
-            font=("Segoe UI", 9, "bold"), activebackground="#e6f7fa",
-            activeforeground=TEAL_DARK, cursor="hand2", bd=0
-        )
-        cancel_btn.pack(anchor="w")
+        # Title
+        canvas.create_text(30, 42, text=self.config.get("title", "Time for a break."),
+                           font=("Segoe UI", 20, "bold"), fill=WHITE, anchor="w")
 
-        # Vertical progress bar: thick, fixed height, fills top-to-bottom and
-        # drains (shrinks from the top, anchored at the bottom) as time passes
-        vbar_width = 44
-        vbar_height = 180
-        bar_wrap = tk.Frame(right_col, bg=TEAL_TRACK, width=vbar_width, height=vbar_height)
-        bar_wrap.pack()
-        bar_wrap.pack_propagate(False)
+        # Message
+        msg_str = "\n".join(self.lines)
+        canvas.create_text(30, 105, text=msg_str,
+                           font=("Segoe UI", 11), fill=WHITE, anchor="w", justify="left")
 
-        self.progress_canvas = tk.Canvas(
-            bar_wrap, bg=TEAL_TRACK, width=vbar_width, height=vbar_height, highlightthickness=0
-        )
-        self.progress_canvas.pack(fill="both", expand=True)
-        self.progress_bar_id = self.progress_canvas.create_rectangle(
-            0, 0, vbar_width, vbar_height, fill=WHITE, width=0
-        )
-        self._vbar_width = vbar_width
-        self._vbar_height = vbar_height
+        # Rounded Cancel Break Button
+        btn_bg = _draw_rounded_polygon(canvas, 30, 156, 165, 192, r=8, fill=WHITE, outline="")
+        btn_txt = canvas.create_text(97, 174, text="Cancel Break", font=("Segoe UI", 9, "bold"), fill=TEAL_DARK)
+
+        for item in (btn_bg, btn_txt):
+            canvas.tag_bind(item, "<Button-1>", lambda _e: self.cancel_break())
+            canvas.tag_bind(item, "<Enter>", lambda _e: canvas.config(cursor="hand2"))
+            canvas.tag_bind(item, "<Leave>", lambda _e: canvas.config(cursor=""))
+
+        # Vertical Progress Bar (Right side)
+        vbar_w, vbar_h = 44, 150
+        vx1, vy1 = 380, 24
+        vx2, vy2 = vx1 + vbar_w, vy1 + vbar_h
+
+        # Rounded container
+        _draw_rounded_polygon(canvas, vx1, vy1, vx2, vy2, r=12, fill=TEAL_TRACK, outline="")
+
+        self.progress_canvas = canvas
+        self._vbar_vx1 = vx1
+        self._vbar_vy1 = vy1
+        self._vbar_vx2 = vx2
+        self._vbar_vy2 = vy2
+        self._vbar_height = vbar_h
 
         break_seconds = self.config["break_seconds"]
-        self.time_label = tk.Label(
-            right_col, text=self._format_time(break_seconds),
-            font=("Segoe UI", 11, "bold"), bg=TEAL, fg=WHITE
-        )
-        self.time_label.pack(pady=(10, 0))
+        self._bar_fill_id = _draw_rounded_polygon(canvas, vx1, vy1, vx2, vy2, r=12, fill=WHITE, outline="")
+
+        # Timer text below bar
+        self.time_label_id = canvas.create_text(vx1 + vbar_w // 2, vy2 + 18,
+                                                     text=self._format_time(break_seconds),
+                                                     font=("Segoe UI", 11, "bold"), fill=WHITE)
 
         popup.update_idletasks()
-        height = card.winfo_reqheight()
         screen_w = popup.winfo_screenwidth()
         screen_h = popup.winfo_screenheight()
         x = (screen_w - width) // 2
@@ -260,14 +234,22 @@ class BreakTimerApp:
             self.end_break()
             return
 
-        self.time_label.config(text=self._format_time(remaining))
-        frac = max(0.0, min(1.0, remaining / self._break_total))
         try:
-            filled_top = self._vbar_height * (1 - frac)
-            self.progress_canvas.coords(
-                self.progress_bar_id, 0, filled_top, self._vbar_width, self._vbar_height
-            )
-        except tk.TclError:
+            self.progress_canvas.itemconfig(self.time_label_id, text=self._format_time(remaining))
+            frac = max(0.0, min(1.0, remaining / self._break_total))
+            filled_top = self._vbar_vy1 + (self._vbar_height * (1 - frac))
+
+            self.progress_canvas.delete(self._bar_fill_id)
+            if frac > 0:
+                h_diff = self._vbar_vy2 - filled_top
+                r_val = min(12, max(2, int(h_diff / 2)))
+                self._bar_fill_id = _draw_rounded_polygon(
+                    self.progress_canvas,
+                    self._vbar_vx1, int(filled_top),
+                    self._vbar_vx2, self._vbar_vy2,
+                    r=r_val, fill=WHITE, outline=""
+                )
+        except (tk.TclError, AttributeError):
             return
 
         self.tick_job = self.root.after(200, self._tick)
@@ -277,13 +259,16 @@ class BreakTimerApp:
         seconds = max(0, int(seconds))
         return f"{seconds // 60:02d}:{seconds % 60:02d}"
 
-    def cancel_break(self):
+    def _finish_break(self):
+        """Shared logic for both cancelling and naturally ending a break."""
         self._close_popup()
         self._reschedule()
 
+    def cancel_break(self):
+        self._finish_break()
+
     def end_break(self):
-        self._close_popup()
-        self._reschedule()
+        self._finish_break()
 
     def _close_popup(self):
         self._break_active = False
@@ -315,7 +300,6 @@ class BreakTimerApp:
             except tk.TclError:
                 pass
             self.overlay = None
-        gc.collect()
 
     def run(self):
         self.root.mainloop()

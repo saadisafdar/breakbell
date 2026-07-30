@@ -8,21 +8,12 @@ it into a working executable.
 """
 import sys
 
-if sys.platform.startswith("win"):
-    import ctypes
-    try:
-        myappid = "saadisafdar.breakbell.app.1"
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    except Exception:
-        pass
-    try:
-        console_hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-        if console_hwnd:
-            ctypes.windll.user32.ShowWindow(console_hwnd, 0)
-    except Exception:
-        pass
+from breakbell.cli import _win_setup, main
 
-from breakbell.cli import main
+_win_setup()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(0)

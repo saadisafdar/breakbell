@@ -8,20 +8,26 @@ from .tray import TRAY_AVAILABLE, make_icon_image
 from . import updater
 
 
+def _win_setup():
+    """Suppress the console window and set the AppUserModelID on Windows."""
+    if not sys.platform.startswith("win"):
+        return
+    import ctypes
+    try:
+        myappid = "saadisafdar.breakbell.app.1"
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except Exception:
+        pass
+    try:
+        console_hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if console_hwnd:
+            ctypes.windll.user32.ShowWindow(console_hwnd, 0)
+    except Exception:
+        pass
+
+
 def main():
-    if sys.platform.startswith("win"):
-        import ctypes
-        try:
-            myappid = "saadisafdar.breakbell.app.1"
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        except Exception:
-            pass
-        try:
-            console_hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-            if console_hwnd:
-                ctypes.windll.user32.ShowWindow(console_hwnd, 0)
-        except Exception:
-            pass
+    _win_setup()
 
     parser = argparse.ArgumentParser(description="Lightweight desktop break reminder timer")
     parser.add_argument("--no-tray", action="store_true",
@@ -55,26 +61,30 @@ def main():
         def start_tray():
             try:
                 import pystray  # type: ignore
-                items = [
-                    pystray.MenuItem("Settings", lambda: app.root.after(0, open_settings), default=True),
-                ]
-                up_info = updater.get_update_info()
-                if up_info:
-                    items.append(
-                        pystray.MenuItem(f"🎉 Update available (v{up_info['version']})", lambda: updater.open_release_page())
-                    )
-                items.extend([
-                    pystray.MenuItem("Take a break now", lambda: app.root.after(0, app.trigger_break_now)),
-                    pystray.MenuItem("Quit", lambda: quit_app()),
-                ])
-                menu = pystray.Menu(*items)
-                icon = pystray.Icon("breakbell", make_icon_image(), "BreakBell", menu)
+
+                def _settings(*_):
+                    app.root.after(0, open_settings)
+
+                def _break_now(*_):
+                    app.root.after(0, app.trigger_break_now)
+
+                def _quit(*_):
+                    app.root.after(0, quit_app)
+
+                menu = pystray.Menu(
+                    pystray.MenuItem("Settings", _settings, default=True),
+                    pystray.MenuItem("Take a break now", _break_now),
+                    pystray.Menu.SEPARATOR,
+                    pystray.MenuItem("Quit", _quit),
+                )
+                icon = pystray.Icon("breakbell", make_icon_image(), "BreakBell", menu=menu)
                 tray_icon_holder["icon"] = icon
                 icon.run()
             except Exception:
-                pass  # No usable tray backend on this system - app still runs fine without it
+                pass  # No usable tray backend - app still runs without it
 
         threading.Thread(target=start_tray, daemon=True).start()
+
     else:
         # No tray available - open Settings immediately so the app is still reachable
         app.root.after(500, open_settings)
